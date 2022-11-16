@@ -76,4 +76,10 @@ public class PlayerController : MonoBehaviour {
     private bool IsHoldingBall() {
         return _ball.PlayerHoldingTheBall == this;
     }
+
+    private void OnControllerColliderHit(ControllerColliderHit hit) {
+        if (hit.collider.CompareTag("Ball")) {
+            _ball.PlayerHoldingTheBall = this;
+        }
+    }
 }

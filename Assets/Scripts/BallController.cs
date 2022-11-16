@@ -122,6 +122,13 @@ public class BallController : MonoBehaviour {
         ProcessInsideBasketCollision(other);
     }
 
+    private void OnCollisionEnter(Collision other) {
+        // collisions on ball movement
+        if (other.collider.CompareTag("Player")) {
+            PlayerHoldingTheBall = other.gameObject.GetComponent<PlayerController>();
+        }
+    }
+
     private void ProcessInsideBasketCollision(Collider other) {
         if (!other.CompareTag("InsideBasket")) {
             return;
