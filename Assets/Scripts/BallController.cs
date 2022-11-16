@@ -12,6 +12,7 @@ public enum BallState {
 public class BallController : MonoBehaviour {
     private BallState _state;
     private Vector3 _previousStatePosition;
+    private float _stateElapsedTime;
 
     public BallState State {
         get { return _state; }
@@ -25,14 +26,15 @@ public class BallController : MonoBehaviour {
     }
 
     public PlayerController PlayerHoldingTheBall;
+    [SerializeField] private float _bounceAmplitude;
+    [SerializeField] private float _grabDuration;
+
+    [Header("Throwing At Basket")]
     [SerializeField] private Transform Hoop;
     [SerializeField] private float _basketThrowCurvature;
     [SerializeField] private float _basketThrowAirborneDuration;
+    [SerializeField] private AudioClip _onScoreSound;
 
-    [SerializeField] private float _bounceAmplitude;
-    private float _stateElapsedTime;
-    [SerializeField] private float _grabDuration;
-    [SerializeField] private AudioClip _audioClipSwoosh;
     private Rigidbody _rigidbody;
     private SphereCollider _ballCollider;
     private float _yVelocity;
@@ -133,7 +135,7 @@ public class BallController : MonoBehaviour {
             return;
         }
         // scored
-        AudioSource.PlayClipAtPoint(_audioClipSwoosh, transform.position);
+        AudioSource.PlayClipAtPoint(_onScoreSound, transform.position);
         State = BallState.Free;
     }
 }

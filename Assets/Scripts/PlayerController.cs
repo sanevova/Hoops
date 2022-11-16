@@ -13,9 +13,11 @@ public class PlayerController : MonoBehaviour {
     private float _ySpeed;
 
     private BallController _ball;
+    private PlayerDash _dash;
 
     void Start() {
-        _characterController = GetComponentInChildren<CharacterController>();
+        _characterController = GetComponent<CharacterController>();
+        _dash = GetComponent<PlayerDash>();
         _ball = BallController.GetInstance();
     }
 
@@ -32,27 +34,29 @@ public class PlayerController : MonoBehaviour {
 
         _characterController.Move(velocity * Time.deltaTime);
 
-        Quaternion dstRotation;
+        Vector3 lookDirection = movementDirection;
         if (movementDirection == Vector3.zero) {
             // standing still
             var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
             if (Physics.Raycast(ray, out RaycastHit hit)) {
                 if (hit.collider.name == "Plane") {
-                    dstRotation = Quaternion.LookRotation(hit.point, Vector3.up);
-                    RotateTowards(dstRotation);
+                    lookDirection = (hit.point - transform.position).normalized;
                 }
             }
-        } else {
-            dstRotation = Quaternion.LookRotation(movementDirection, Vector3.up);
-            RotateTowards(dstRotation);
         }
+        lookDirection.y = 0;
 
+        if (lookDirection != Vector3.zero) {
+            RotateTowards(Quaternion.LookRotation(lookDirection, Vector3.up));
+        }
+        _dash.ProcessDash(transform, lookDirection);
         HandleBall();
     }
 
     private void RotateTowards(Quaternion dstRotation) {
         transform.rotation = Quaternion.RotateTowards(transform.rotation, dstRotation, _rotationSpeed * Time.deltaTime);
     }
+
     private void HandleBall() {
         if (Input.GetKey(KeyCode.Space)) {
             _ball.PlayerHoldingTheBall = this;
