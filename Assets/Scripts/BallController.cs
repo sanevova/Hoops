@@ -6,7 +6,9 @@ public enum BallState {
     Dribbled,
     Held,
     BasketThrow,
+    Pass,
     Free,
+    AfterScore,
 }
 
 public class BallController : MonoBehaviour {
@@ -30,14 +32,17 @@ public class BallController : MonoBehaviour {
     [SerializeField] private float _grabDuration;
 
     [Header("Throwing At Basket")]
-    [SerializeField] private Transform Hoop;
+    [SerializeField] private Transform _hoop;
     [SerializeField] private float _basketThrowCurvature;
     [SerializeField] private float _basketThrowAirborneDuration;
+    [SerializeField] private float _basketThrowColliderShrinkFactor;
+
     [SerializeField] private AudioClip _onScoreSound;
 
     private Rigidbody _rigidbody;
     private SphereCollider _ballCollider;
-    private float _yVelocity;
+    private Vector3 _calculatedVelocity;
+    private Vector3 _passTargetPosition;
 
     private static BallController _instance;
 
@@ -49,6 +54,11 @@ public class BallController : MonoBehaviour {
         _instance = this;
         _rigidbody = GetComponent<Rigidbody>();
         _ballCollider = GetComponent<SphereCollider>();
+#if UNITY_EDITOR
+        Debug.unityLogger.logEnabled = true;
+#else
+        Debug.unityLogger.logEnabled = false;
+#endif
     }
 
     void Start() {
@@ -65,6 +75,9 @@ public class BallController : MonoBehaviour {
                 break;
             case BallState.BasketThrow:
                 ThrowAtBasket();
+                break;
+            case BallState.Pass:
+                Pass();
                 break;
             default:
                 break;
@@ -87,19 +100,31 @@ public class BallController : MonoBehaviour {
     }
 
     void ThrowAtBasket() {
+        Throw(_hoop.position, _basketThrowCurvature);
+    }
+
+
+    void Pass() {
         if (_stateElapsedTime == 0) {
-            // first frame in state
-            // PlayerHoldingTheBall = null;
-            // _ballCollider.radius *= 0.1f;
+            _passTargetPosition = PlayerHoldingTheBall.MousePosition;
         }
-        var ballPosition = LerpTo(Hoop.position, _basketThrowAirborneDuration);
+        Throw(_passTargetPosition, _basketThrowCurvature);
+    }
+
+    private void Throw(Vector3 targetPosition, float arcCurvature) {
+        if (_stateElapsedTime == 0) {
+            // refuse ball possession on the first frame of throwing
+            PlayerHoldingTheBall = null;
+        }
+
+        var ballPosition = LerpTo(targetPosition, _basketThrowAirborneDuration);
         var arc = Vector3.up
-            * _basketThrowCurvature
+            * arcCurvature
             * Mathf.Sin(_stateElapsedTime / _basketThrowAirborneDuration * Mathf.PI);
 
         var previousFramePosition = transform.position;
         transform.position = ballPosition + arc;
-        _yVelocity = (transform.position.y - previousFramePosition.y) / Time.deltaTime;
+        _calculatedVelocity = (transform.position - previousFramePosition) / Time.deltaTime;
     }
 
     private Vector3 LerpTo(Vector3 destination, float duration) {
@@ -108,34 +133,31 @@ public class BallController : MonoBehaviour {
         return Vector3.Lerp(_previousStatePosition, destination, lerpRatio);
     }
 
-    public float Factor;
     private void WillStateChangeTo(BallState newState) {
         _previousStatePosition = transform.position;
-        if (newState == BallState.Free) {
+        if (newState == BallState.Free || newState == BallState.AfterScore) {
             // becoming free
             _rigidbody.isKinematic = false;
             _ballCollider.isTrigger = false;
-            _rigidbody.velocity = Vector3.up * _yVelocity;
-        } else if (State == BallState.Free) {
+            _rigidbody.velocity = _calculatedVelocity;
+        } else if (State == BallState.Free || State == BallState.AfterScore) {
             // becoming in play
             _rigidbody.isKinematic = true;
             _ballCollider.isTrigger = true;
         }
 
         if (newState == BallState.BasketThrow) {
-            _ballCollider.radius /= Factor;
-            PlayerHoldingTheBall = null;
-            // Debug.Log("THROWING");
+            _ballCollider.radius /= _basketThrowColliderShrinkFactor;
         } else if (State == BallState.BasketThrow) {
-            // Debug.Log("STOP THROWING");
-            _ballCollider.radius *= Factor;
+            _ballCollider.radius *= _basketThrowColliderShrinkFactor;
         }
+        Debug.Log($"{State} -> {newState}");
     }
 
     private void OnTriggerEnter(Collider other) {
-        ProcessInsideBasketCollision(other);
-        if (other.CompareTag("Rim")) {
-            // Debug.Log(other.tag);
+        CheckIfScored(other);
+        TryPickUpBall(other);
+        if (other.CompareTag("Rim") || other.CompareTag("Wall")) {
             other.isTrigger = false;
             State = BallState.Free;
         }
@@ -143,25 +165,36 @@ public class BallController : MonoBehaviour {
 
     private void OnCollisionEnter(Collision other) {
         // collisions on ball movement
-        if (other.collider.CompareTag("Player")) {
-            PlayerHoldingTheBall = other.gameObject.GetComponent<PlayerController>();
-        }
+        TryPickUpBall(other.collider);
     }
 
-    private void ProcessInsideBasketCollision(Collider other) {
+    private void TryPickUpBall(Collider other) {
+        if (!other.CompareTag("Player")) {
+            return;
+        }
+        PlayerHoldingTheBall = other.gameObject.GetComponent<PlayerController>();
+    }
+
+    private void CheckIfScored(Collider other) {
         if (!other.CompareTag("InsideBasket")) {
             return;
         }
-        if (_yVelocity > 0) {
+        if (_calculatedVelocity.y > 0) {
             // touching the net from below does not count
             return;
         }
-        if (State != BallState.BasketThrow) {
-            // only allow scoring when the ball has been thrown at basket
+        if (State == BallState.AfterScore) {
+            // disallow double scoring;
+            // needs to change to another state before can score again
             return;
         }
         // scored
+        Score();
+    }
+
+    private void Score() {
         AudioSource.PlayClipAtPoint(_onScoreSound, transform.position);
-        State = BallState.Free;
+        State = BallState.AfterScore;
+        Debug.Log("Scored");
     }
 }

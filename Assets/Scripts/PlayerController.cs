@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class PlayerController : MonoBehaviour {
+    [SerializeField] private bool _isThisClientPlayer;
     public Transform DribbleStartLocation;
     public Transform HoldLocation;
 
     [SerializeField] private float _speed;
     [SerializeField] private float _rotationSpeed;
+    [HideInInspector] public Vector3 MousePosition { get; private set; }
 
     private CharacterController _characterController;
     private float _ySpeed;
@@ -21,9 +23,16 @@ public class PlayerController : MonoBehaviour {
         _ball = BallController.GetInstance();
     }
 
+#if UNITY_EDITOR
+    private static GameObject _debugSphere;
+#endif
+
     void Update() {
 
         Vector3 movementDirection = new(-Input.GetAxis("Vertical"), 0, Input.GetAxis("Horizontal"));
+        if (!_isThisClientPlayer) {
+            movementDirection = Vector3.zero;
+        }
         movementDirection.Normalize();
         Vector3 velocity = movementDirection * _speed;
 
@@ -43,6 +52,18 @@ public class PlayerController : MonoBehaviour {
                 if (hit.collider.name == "Plane") {
                     lookDirection = (hit.point - transform.position).normalized;
                 }
+                if (_isThisClientPlayer) {
+                    MousePosition = hit.point;
+#if UNITY_EDITOR
+                    if (_debugSphere == null) {
+                        _debugSphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                        _debugSphere.GetComponent<Collider>().enabled = false;
+                        _debugSphere.transform.localScale = Vector3.one;
+                    }
+                    _debugSphere.transform.position = MousePosition;
+#endif
+                }
+
             }
         }
         lookDirection.y = 0;
@@ -50,7 +71,9 @@ public class PlayerController : MonoBehaviour {
         if (lookDirection != Vector3.zero) {
             RotateTowards(Quaternion.LookRotation(lookDirection, Vector3.up));
         }
-        _dash.ProcessDash(transform, lookDirection);
+        if (_isThisClientPlayer) {
+            _dash.ProcessDash(transform, lookDirection);
+        }
         HandleBall();
     }
 
@@ -59,7 +82,8 @@ public class PlayerController : MonoBehaviour {
     }
 
     private void HandleBall() {
-        if (Input.GetKey(KeyCode.Space)) {
+        if (Input.GetKey(KeyCode.Space) && _isThisClientPlayer) {
+            // summon ball cheat
             _ball.PlayerHoldingTheBall = this;
         }
         if (!IsHoldingBall()) {
@@ -67,6 +91,8 @@ public class PlayerController : MonoBehaviour {
         }
         if (Input.GetKeyDown(KeyCode.Q) || Input.GetButtonDown("Fire1")) {
             _ball.State = BallState.BasketThrow;
+        } else if (Input.GetKeyDown(KeyCode.R)) {
+            _ball.State = BallState.Pass;
         } else if (Input.GetMouseButton(1) || Input.GetKey(KeyCode.E) || Input.GetKey(KeyCode.Space)) {
             _ball.State = BallState.Held;
         } else {
