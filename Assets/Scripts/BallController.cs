@@ -87,7 +87,11 @@ public class BallController : MonoBehaviour {
     }
 
     void ThrowAtBasket() {
-        PlayerHoldingTheBall = null;
+        if (_stateElapsedTime == 0) {
+            // first frame in state
+            // PlayerHoldingTheBall = null;
+            // _ballCollider.radius *= 0.1f;
+        }
         var ballPosition = LerpTo(Hoop.position, _basketThrowAirborneDuration);
         var arc = Vector3.up
             * _basketThrowCurvature
@@ -104,6 +108,7 @@ public class BallController : MonoBehaviour {
         return Vector3.Lerp(_previousStatePosition, destination, lerpRatio);
     }
 
+    public float Factor;
     private void WillStateChangeTo(BallState newState) {
         _previousStatePosition = transform.position;
         if (newState == BallState.Free) {
@@ -116,10 +121,24 @@ public class BallController : MonoBehaviour {
             _rigidbody.isKinematic = true;
             _ballCollider.isTrigger = true;
         }
+
+        if (newState == BallState.BasketThrow) {
+            _ballCollider.radius /= Factor;
+            PlayerHoldingTheBall = null;
+            // Debug.Log("THROWING");
+        } else if (State == BallState.BasketThrow) {
+            // Debug.Log("STOP THROWING");
+            _ballCollider.radius *= Factor;
+        }
     }
 
     private void OnTriggerEnter(Collider other) {
         ProcessInsideBasketCollision(other);
+        if (other.CompareTag("Rim")) {
+            // Debug.Log(other.tag);
+            other.isTrigger = false;
+            State = BallState.Free;
+        }
     }
 
     private void OnCollisionEnter(Collision other) {

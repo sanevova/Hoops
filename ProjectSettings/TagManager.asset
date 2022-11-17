@@ -6,6 +6,7 @@ TagManager:
   tags:
   - InsideBasket
   - Ball
+  - Rim
   layers:
   - Default
   - TransparentFX

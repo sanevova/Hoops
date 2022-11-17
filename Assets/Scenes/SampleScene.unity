@@ -278,6 +278,7 @@ MonoBehaviour:
   _basketThrowCurvature: 7
   _basketThrowAirborneDuration: 0.8
   _onScoreSound: {fileID: 8300000, guid: e99e2ce2a4b3d3d448766815f0f254eb, type: 3}
+  Factor: 1.5
 --- !u!54 &621992107
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -449,6 +450,37 @@ MonoBehaviour:
   HoldLocation: {fileID: 0}
   _speed: 5
   _rotationSpeed: 720
+--- !u!1 &875533111 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: -3756473180518285571, guid: 500f1e552136c5f4e906ddaccae0b09d, type: 3}
+  m_PrefabInstance: {fileID: 1239180358}
+  m_PrefabAsset: {fileID: 0}
+--- !u!64 &875533117
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 875533111}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 0
+  serializedVersion: 4
+  m_Convex: 0
+  m_CookingOptions: 30
+  m_Mesh: {fileID: 8314571269056883277, guid: 500f1e552136c5f4e906ddaccae0b09d, type: 3}
+--- !u!114 &875533118
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 875533111}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 926f694c1bb46c245bb8092b06702952, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &963194225
 GameObject:
   m_ObjectHideFlags: 0
@@ -688,7 +720,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -3756473180518285571, guid: 500f1e552136c5f4e906ddaccae0b09d, type: 3}
       propertyPath: m_TagString
-      value: Untagged
+      value: Rim
       objectReference: {fileID: 0}
     - target: {fileID: 65702495048144492, guid: 500f1e552136c5f4e906ddaccae0b09d, type: 3}
       propertyPath: m_IsActive
