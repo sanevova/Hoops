@@ -46,7 +46,7 @@ public class PlayerController : MonoBehaviour {
         Vector3 lookDirection = movementDirection;
         if (movementDirection == Vector3.zero) {
             // standing still
-            var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            var ray = Utils.Camera.ScreenPointToRay(Input.mousePosition);
             if (Physics.Raycast(ray, out RaycastHit hit)) {
                 if (hit.collider.name == "Plane") {
                     lookDirection = (hit.point - transform.position).normalized;
