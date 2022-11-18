@@ -139,7 +139,9 @@ public class BallController : MonoBehaviour {
             // becoming free
             _rigidbody.isKinematic = false;
             _ballCollider.isTrigger = false;
-            _rigidbody.velocity = _calculatedVelocity;
+            if (newState == BallState.Free) {
+                _rigidbody.velocity = _calculatedVelocity;
+            }
         } else if (State == BallState.Free || State == BallState.AfterScore) {
             // becoming in play
             _rigidbody.isKinematic = true;
