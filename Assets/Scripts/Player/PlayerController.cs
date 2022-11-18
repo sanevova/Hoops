@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class PlayerController : MonoBehaviour {
@@ -7,7 +5,7 @@ public class PlayerController : MonoBehaviour {
     public Transform DribbleStartLocation;
     public Transform HoldLocation;
 
-    [SerializeField] private float _speed;
+    [SerializeField] public float Speed;
     [SerializeField] private float _rotationSpeed;
     [HideInInspector] public Vector3 MousePosition { get; private set; }
 
@@ -16,10 +14,12 @@ public class PlayerController : MonoBehaviour {
 
     private BallController _ball;
     private PlayerDash _dash;
+    private PlayerJump _jump;
 
     void Start() {
         _characterController = GetComponent<CharacterController>();
         _dash = GetComponent<PlayerDash>();
+        _jump = GetComponent<PlayerJump>();
         _ball = BallController.GetInstance();
     }
 
@@ -28,13 +28,12 @@ public class PlayerController : MonoBehaviour {
 #endif
 
     void Update() {
-
         Vector3 movementDirection = new(-Input.GetAxis("Vertical"), 0, Input.GetAxis("Horizontal"));
         if (!_isThisClientPlayer) {
             movementDirection = Vector3.zero;
         }
         movementDirection.Normalize();
-        Vector3 velocity = movementDirection * _speed;
+        Vector3 velocity = movementDirection * Speed;
 
         _ySpeed += Physics.gravity.y * Time.deltaTime;
         if (_characterController.isGrounded) {
@@ -71,9 +70,7 @@ public class PlayerController : MonoBehaviour {
         if (lookDirection != Vector3.zero) {
             RotateTowards(Quaternion.LookRotation(lookDirection, Vector3.up));
         }
-        if (_isThisClientPlayer) {
-            _dash.ProcessDash(transform, lookDirection);
-        }
+        HandleMovementAbilities(lookDirection, movementDirection);
         HandleBall();
     }
 
@@ -100,6 +97,14 @@ public class PlayerController : MonoBehaviour {
         } else {
             _ball.State = BallState.Dribbled;
         }
+    }
+
+    private void HandleMovementAbilities(Vector3 lookDirection, Vector3 movementDirection) {
+        if (!_isThisClientPlayer) {
+            return;
+        }
+        _dash?.ProcessDash(transform, lookDirection);
+        _jump?.Process(this, movementDirection);
     }
 
     private bool IsHoldingBall() {

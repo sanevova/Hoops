@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class PlayerDash : MonoBehaviour {
@@ -10,8 +8,12 @@ public class PlayerDash : MonoBehaviour {
     private float _dashStartTime = -1000f;
     private Vector3 _dashDirection = Vector3.zero;
 
+    private void Update() { }
 
     public void ProcessDash(Transform playerTransform, Vector3 lookDirection) {
+        if (!enabled) {
+            return;
+        }
         if (Input.GetKeyDown(KeyCode.LeftShift)) {
             _dashStartTime = Time.time;
             _dashStartPosition = playerTransform.position;
