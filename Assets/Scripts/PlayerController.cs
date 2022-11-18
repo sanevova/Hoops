@@ -95,6 +95,8 @@ public class PlayerController : MonoBehaviour {
             _ball.State = BallState.Pass;
         } else if (Input.GetMouseButton(1) || Input.GetKey(KeyCode.E) || Input.GetKey(KeyCode.Space)) {
             _ball.State = BallState.Held;
+        } else if (Input.GetKeyDown(KeyCode.Z)) {
+            _ball.State = BallState.ShiftDribble;
         } else {
             _ball.State = BallState.Dribbled;
         }

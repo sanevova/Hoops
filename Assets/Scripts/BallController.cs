@@ -1,9 +1,11 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+using DG.Tweening;
+using DG.Tweening.Core;
 public enum BallState {
     Dribbled,
+    ShiftDribble,
     Held,
     BasketThrow,
     Pass,
@@ -30,6 +32,9 @@ public class BallController : MonoBehaviour {
     public PlayerController PlayerHoldingTheBall;
     [SerializeField] private float _bounceAmplitude;
     [SerializeField] private float _grabDuration;
+    [SerializeField] private float _shiftDribbleDuration;
+    private Tweener _shiftDribbleTweener;
+
 
     [Header("Throwing At Basket")]
     [SerializeField] private Transform _hoop;
@@ -70,6 +75,10 @@ public class BallController : MonoBehaviour {
             case BallState.Dribbled:
                 Dribble();
                 break;
+            case BallState.ShiftDribble:
+                ShiftDribble();
+                Dribble();
+                break;
             case BallState.Held:
                 Hold();
                 break;
@@ -94,6 +103,23 @@ public class BallController : MonoBehaviour {
             transform.position = nextDribblePosition;
         }
     }
+    private void ShiftDribble() {
+        if (!IsFirstFrameOfState()) {
+            return;
+        }
+        if (_shiftDribbleTweener != null && _shiftDribbleTweener.IsActive()) {
+            return;
+        }
+        var dribbleLocation = PlayerHoldingTheBall.DribbleStartLocation;
+        Debug.Log(dribbleLocation.localPosition.x);
+        _shiftDribbleTweener = dribbleLocation.DOLocalMoveX(
+            -dribbleLocation.localPosition.x,
+            _shiftDribbleDuration);
+    }
+
+    private bool IsFirstFrameOfState() {
+        return _stateElapsedTime == 0;
+    }
 
     void Hold() {
         transform.position = LerpTo(PlayerHoldingTheBall.HoldLocation.position, _grabDuration);
@@ -105,14 +131,14 @@ public class BallController : MonoBehaviour {
 
 
     void Pass() {
-        if (_stateElapsedTime == 0) {
+        if (IsFirstFrameOfState()) {
             _passTargetPosition = PlayerHoldingTheBall.MousePosition;
         }
         Throw(_passTargetPosition, _basketThrowCurvature);
     }
 
     private void Throw(Vector3 targetPosition, float arcCurvature) {
-        if (_stateElapsedTime == 0) {
+        if (IsFirstFrameOfState()) {
             // refuse ball possession on the first frame of throwing
             PlayerHoldingTheBall = null;
         }
@@ -161,7 +187,9 @@ public class BallController : MonoBehaviour {
         TryPickUpBall(other);
         if (other.CompareTag("Rim") || other.CompareTag("Wall")) {
             other.isTrigger = false;
-            State = BallState.Free;
+            if (State != BallState.Dribbled) {
+                State = BallState.Free;
+            }
         }
     }
 
